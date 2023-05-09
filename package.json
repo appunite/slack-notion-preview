@@ -5,11 +5,13 @@
   "scripts": {
     "dev": "ts-node-dev --poll --respawn --transpile-only --files ./src/index.ts",
     "build": "tsc -p .",
-    "start": "NODE_ENV=production node dist/src/index.js"
+    "start": "NODE_ENV=production node dist/src/index.js",
+    "deploy": "npm run build && gcloud config set project au-slack-notion-bot && gcloud app deploy"
   },
   "dependencies": {
     "@notionhq/client": "^1.0.2",
     "@slack/bolt": "^3.10.0",
+    "add-dashes-to-uuid": "^1.0.0",
     "dotenv": "^16.0.0"
   },
   "devDependencies": {

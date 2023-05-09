@@ -23,6 +23,10 @@ export const appEnv = {
     return this._assertNonNull(process.env.NOTION_TOKEN)
   },
 
+  get notionCookieToken(): string {
+    return this._assertNonNull(process.env.NOTION_COOKIE_TOKEN)
+  },
+
   get slackToken(): string {
     return this._assertNonNull(process.env.SLACK_TOKEN)
   },

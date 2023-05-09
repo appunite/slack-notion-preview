@@ -12,6 +12,9 @@
     },
     "NOTION_TOKEN": {
       "description": "Notion Auth Token"
+    },
+    "NOTION_COOKIE_TOKEN": {
+      "description": "Notion Auth Token for user accounts from browser cookie"
     }
   }
 }

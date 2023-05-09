@@ -6,6 +6,7 @@ import {
 import { appEnv } from './app-env'
 import { logger } from './logger'
 import { getLastElement } from './utils'
+import dashUUID from 'add-dashes-to-uuid'
 
 export const notionClient = new Client({
   auth: appEnv.notionToken,
@@ -77,6 +78,77 @@ export const notionService = {
     // e.g. https://www.notion.so/example/my-title-571bb99b29e040eb8a46c2f9b7d138af
     const pathLast = getLastElement(url.pathname.split('/'))
     return getLastElement(pathLast?.split('-') ?? [])
+  },
+
+  isPagePublic: async (pageId: string): Promise<boolean> => {
+    const pageUUID = dashUUID(pageId)
+
+    const res = await fetch(`https://www.notion.so/api/v3/loadPageChunk`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        cookie: appEnv.notionCookieToken,
+      },
+      body: JSON.stringify({
+        page: {
+          id: pageUUID,
+          spaceId: 'f4012e63-3e93-4948-a7a2-609936dee3d3',
+        },
+        limit: 30,
+        cursor: {
+          stack: [],
+        },
+        chunkNumber: 0,
+        verticalColumns: false,
+      }),
+    })
+
+    const json = await res.json()
+
+    if (json?.recordMap?.block) {
+      const permissions = Object.keys(json.recordMap.block).reduce(
+        (acc, key) => {
+          if (acc.length === 0) {
+            if (json.recordMap.block[key].value.permissions) {
+              acc = json.recordMap.block[key].value.permissions
+            }
+          }
+          return acc
+        },
+        []
+      )
+
+      const everyoneHasAccess = permissions.some(
+        (permission: any) =>
+          permission.role === 'editor' &&
+          (permission.type === 'space_permission' ||
+            permission.type === 'explicit_team_permission')
+      )
+
+      return everyoneHasAccess
+    } else {
+      return false
+    }
+  },
+
+  formatHeadings: (content: string) => {
+    const lines = content.split('\n')
+
+    const formatted = lines.map(line => {
+      if (line.startsWith('#')) {
+        const match = line.match(/# (.*)/)
+
+        const title = match ? match[1] : line
+
+        return `*${title}*`
+      }
+
+      return line
+    })
+
+    const joined = formatted.join('\n')
+
+    return joined
   },
 }
 
