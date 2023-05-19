@@ -15,6 +15,8 @@ export const notionClient = new Client({
 const INDENT = '    '
 const NEWLINE = '\n'
 
+const ADR_DATABASE_ID = 'c4e7f4e4-438e-4388-9261-628446dd4b36'
+
 export const notionService = {
   async getPageData(
     pageId: string,
@@ -80,9 +82,7 @@ export const notionService = {
     return getLastElement(pathLast?.split('-') ?? [])
   },
 
-  isPagePublic: async (pageId: string): Promise<boolean> => {
-    const pageUUID = dashUUID(pageId)
-
+  getPageChunk: async (dashedPageUUID: string) => {
     const res = await fetch(`https://www.notion.so/api/v3/loadPageChunk`, {
       method: 'POST',
       headers: {
@@ -91,7 +91,7 @@ export const notionService = {
       },
       body: JSON.stringify({
         page: {
-          id: pageUUID,
+          id: dashedPageUUID,
           spaceId: 'f4012e63-3e93-4948-a7a2-609936dee3d3',
         },
         limit: 30,
@@ -103,14 +103,20 @@ export const notionService = {
       }),
     })
 
-    const json = await res.json()
+    return await res.json()
+  },
 
-    if (json?.recordMap?.block) {
-      const permissions = Object.keys(json.recordMap.block).reduce(
+  isPagePublic: async (pageId: string): Promise<boolean> => {
+    const pageUUID = dashUUID(pageId)
+
+    const data = await notionService.getPageChunk(pageUUID)
+
+    if (data?.recordMap?.block) {
+      const permissions = Object.keys(data.recordMap.block).reduce(
         (acc, key) => {
           if (acc.length === 0) {
-            if (json.recordMap.block[key].value.permissions) {
-              acc = json.recordMap.block[key].value.permissions
+            if (data.recordMap.block[key].value.permissions) {
+              acc = data.recordMap.block[key].value.permissions
             }
           }
           return acc
@@ -126,6 +132,18 @@ export const notionService = {
       )
 
       return everyoneHasAccess
+    } else {
+      return false
+    }
+  },
+
+  isPageAdr: async (pageId: string): Promise<boolean> => {
+    const pageUUID = dashUUID(pageId)
+
+    const data = await notionService.getPageChunk(pageUUID)
+
+    if (data?.recordMap?.block) {
+      return Object.keys(data.recordMap.block).includes(ADR_DATABASE_ID)
     } else {
       return false
     }

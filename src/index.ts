@@ -5,6 +5,7 @@ import { App as SlackApp, LogLevel } from '@slack/bolt'
 import { LinkUnfurls } from '@slack/web-api'
 import { logger } from './logger'
 import { notionService } from './notion'
+import { handleSlackGuardian } from './slackGuardian'
 
 const slackApp = new SlackApp({
   token: appEnv.slackToken,
@@ -13,11 +14,22 @@ const slackApp = new SlackApp({
 })
 
 // Remove &amp;, which & sometimes escaped to, perhaps due to a bug in Slack.
-const sanitizeSlackLink = (url: string): string => {
+export const sanitizeSlackLink = (url: string): string => {
   return url.replace(/amp;/g, '')
 }
 
-slackApp.event('link_shared', async ({ event, client }) => {
+slackApp.event('link_shared', async ({ event, client, say }) => {
+  // const appunitePulse = 'C039YL3PQUT' // #appunite-pulse
+  const appunitePulse = 'GCQ4KBS11' // #testing-channel
+
+  await handleSlackGuardian({
+    event,
+    say,
+    channels: [appunitePulse],
+    message:
+      'Ziomek, nie zaśmiecaj proszę appunite-puls - jutro pojawi się Automatyczna informacja z podsumowaniem ADR, dbajmy wspólnie o środowisko i kleszcze',
+  })
+
   let unfurls: LinkUnfurls = {}
 
   for (const link of event.links) {
